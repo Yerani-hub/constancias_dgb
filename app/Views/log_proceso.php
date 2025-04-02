@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+    <head>
         <base href="<?= base_url() ?>">
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -23,7 +23,7 @@
             <!-- * * Tip * * You can use text or an image for your navbar brand.-->
             <!-- * * * * * * When using an image, we recommend the SVG format.-->
             <!-- * * * * * * Dimensions: Maximum height: 32px, maximum width: 240px-->
-            <label class="navbar-brand pe-3 ps-4 ps-lg-2">Dirección General de Bachillerato</label>
+            <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="index.html">Dirección General de Bachillerato</a>
             <!-- Navbar Search Input-->
             <!-- * * Note: * * Visible only on and above the lg breakpoint
             <form class="form-inline me-auto d-none d-lg-block me-3">
@@ -138,7 +138,7 @@
                             <div class="sidenav-menu-heading">Core</div>
                             Sidenav Accordion (Dashboard)-->
                             <!-- Sidenav Heading (Custom)-->
-                            <div class="sidenav-menu-heading">Menú</div>
+                            <div class="sidenav-menu-heading">Custom</div>
                             <!-- Sidenav Accordion (Pages)-->
                             <a class="nav-link collapsed" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#collapseDashboards" aria-expanded="false" aria-controls="collapseDashboards">
                                 <div class="nav-link-icon"><i data-feather="folder"></i></div>
@@ -147,11 +147,13 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Cargar_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="error_carga.html"> <i class="me-2" data-feather="archive"></i>Procesos</a>
                                     <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
                             </div>
+                            
+
                         </div>
                     </div>
                     <!-- Sidenav Footer-->
@@ -169,6 +171,7 @@
                 </nav>
             </div>
             <div id="layoutSidenav_content">
+
                 <main>
                     <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
                         <div class="container-xl px-4">
@@ -176,8 +179,8 @@
                                 <div class="row align-items-center justify-content-between">
                                     <div class="col-auto mt-4">
                                         <h1 class="page-header-title">
-                                            <div class="page-header-icon"><i data-feather="folder-plus"></i></div>
-                                            Constancias
+                                            <div class="page-header-icon"><i data-feather="alert-circle"></i></div>
+                                            Constancias no generadas
                                         </h1>
                                         <div class="page-header-subtitle">Asistente para la gestión de constancias de la Dirección General de Bachillerato.</div>
                                     </div>
@@ -195,48 +198,50 @@
                                         <div class="row align-items-center">
                                             <div class="col-xl-8 col-xxl-12">
                                                 <div class="text-center text-xl-start text-xxl-center mb-4 mb-xl-0 mb-xxl-4">
-                                                    <h1 class="text-primary">¡Comencemos!</h1>
-                                                    <p class="text-gray-700 mb-0">Para generar las constancias nuevas, cargue el archivo CSV.</p>
+                                                    <h1 class="text-primary">¡Revisemos!</h1>
+                                                    <p class="text-gray-700 mb-0">En la siguiente lista se muestran los archivos que no se crearon.</p>
                                                 </div>
                                             </div>
-                                            <form action="<?= base_url('/Carga_archivos/subirCSV') ?>" method="post" enctype="multipart/form-data">
-                                            <div class="row">
-                                                <div class="col-12 col-md-6 mb-4">
-                                                    <label for="formFile" class="form-label">Subir CSV</label>
-                                                    <input class="form-control" type="file" id="formFile" name="archivo_csv" accept=".csv">
-                                                    <div class="tab-pane active " id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
-                                                        <button class="btn btn-outline-primary btn-lg me-2 my-3" type="submit" name="uploadBtn"><i class="me-2" data-feather="upload"> </i> Cargar</button>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <?php if (isset($_SESSION['info'])): ?>
-                                                            <?php if ($_SESSION['info']['estatus'] == true){ ?>
-                                                                <div class="col-12">
-                                                                    <div class="alert alert-cyan " role="alert"><?php echo $_SESSION['info']['mensaje'] ?></div>
-                                                                </div>
-                                                            <?php } ?>
-                                                        <?php endif; ?>
-                                                        
-                                                        <?php if (isset($_SESSION['info'])): ?>
-                                                            <?php if ($_SESSION['info']['estatus'] == false){ ?>
-                                                                <div class="col-12">
-                                                                    <div class="alert alert-red mb-0" role="alert"><?php echo $_SESSION['info']['mensaje'] ?></div>
-                                                                </div>
-                                                            <?php } ?>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    
-                                                    <div class="tab-pane active my-4" id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
-                                                        <button class="btn btn-outline-dark btn-lg me-2 my-1" type="button" disabled><i class="me-2" data-feather="download"> </i> Descargar ZIP</button>
-                                                        
-                                                        <button class="btn btn-outline-primary btn-lg me-2 my-1" type="button" ><i class="me-2" data-feather="download"> </i> Descargar ZIP</button>
-                                                        <label for="formFile" class="form-label">El archivo está listo para su descarga.</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-12 col-md-6 text-center">
-                                                    <img class="img-fluid" src="assets/img/illustrations/upload_file.svg" style="max-width: 28rem" />
-                                                </div>
+                                        
+                                            <!-- Billing history table-->
+                                            <div class="table-responsive table-billing-history">
+                                                <table  id="datatablesSimple" class="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="border-gray-200" scope="col">Folio</th>
+                                                            <th class="border-gray-200" scope="col">Nombre completo</th>
+                                                            <th class="border-gray-200" scope="col">Observaciones</th>
+                                                            <th class="border-gray-200" scope="col">Estado</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>#39201</td>
+                                                            <td>Nombre Alumno</td>
+                                                            <td>El folio está repetido</td>
+                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>#38594</td>
+                                                            <td>Nombre Alumno</td>
+                                                            <td>El folio está repetido</td>
+                                                            <td><span class="badge bg-success">Recuperado</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>#38223</td>
+                                                            <td>Nombre Alumno</td>
+                                                            <td>Error al generar el PDF</td>
+                                                            <td><span class="badge bg-red text-white">Error</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>#38125</td>
+                                                            <td>Nombre Alumno</td>
+                                                            <td>El folio está repetido</td>
+                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -259,6 +264,8 @@
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-        <script src="js/scripts.js"></script>
+        <script src="js/scripts.js"></script>        
+        <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
+        <script src="js/datatables/datatables-simple-demo.js"></script>
     </body>
 </html>

@@ -1,20 +1,31 @@
 <?php namespace App\Models;
 
 use CodeIgniter\Model;
+use Config\Database;
 
 class ProcesoModel extends Model
 {
-    protected $table      = 'tbl_ent_procesos'; // Nombre de la tabla
+    protected $table      = 'tbl_ent_procesos p'; // Nombre de la tabla
     protected $primaryKey = 'id'; // Clave primaria
 
     protected $allowedFields = ['id_usuario', 'afectados', 'zip', 'version_constancia', 'fecha_created', 'fecha_update'];
+
+    // Definir las fechas automáticas para creación y actualización
+    protected $useTimestamps = true;
+    protected $createdField  = 'fecha_created';
+    protected $updatedField  = 'fecha_update';
 
     /**
      * Obtiene todos los procesos
      */
     public function getAll()
     {
-        return $this->findAll();
+        $db = Database::connect('default');
+        $table = $db->table('tbl_ent_procesos p');
+        $query = $table->select("p.*, u.usuario");
+        $query = $table->join("tbl_ent_usuario_dgb u", "p.id_usuario=u.id_usuario", "inner");
+        $query = $table->get();
+        return $query->getResultArray();
     }
 
     /**
@@ -23,14 +34,6 @@ class ProcesoModel extends Model
     public function getById($id)
     {
         return $this->find($id);
-    }
-
-    /**
-     * Inserta un nuevo proceso
-     */
-    public function insertProceso($data)
-    {
-        return $this->insert($data);
     }
 
     /**

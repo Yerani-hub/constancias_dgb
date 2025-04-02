@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <base href="<?= base_url() ?>">
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
@@ -22,7 +23,7 @@
             <!-- * * Tip * * You can use text or an image for your navbar brand.-->
             <!-- * * * * * * When using an image, we recommend the SVG format.-->
             <!-- * * * * * * Dimensions: Maximum height: 32px, maximum width: 240px-->
-            <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="index.html">Dirección General de Bachillerato</a>
+            <label class="navbar-brand pe-3 ps-4 ps-lg-2" href="index.html">Dirección General de Bachillerato</label>
             <!-- Navbar Search Input-->
             <!-- * * Note: * * Visible only on and above the lg breakpoint
             <form class="form-inline me-auto d-none d-lg-block me-3">
@@ -98,16 +99,16 @@
                         <h6 class="dropdown-header d-flex align-items-center">
                             <img class="dropdown-user-img" src="assets/img/illustrations/profiles/profile-1.png" />
                             <div class="dropdown-user-details">
-                                <div class="dropdown-user-details-name">Yerani Samperio</div>
-                                <div class="dropdown-user-details-email">correo@prepaenlinea.sep.gob.mx</div>
+                                <div class="dropdown-user-details-name">
+                                    <?php 
+                                        $session = session();
+                                        echo $session->get('usuario'); 
+                                    ?>
+                                </div>
                             </div>
                         </h6>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="#!">
-                            <div class="dropdown-item-icon"><i data-feather="settings"></i></div>
-                            Perfil
-                        </a>
-                        <a class="dropdown-item" href="#!">
+                        <a class="dropdown-item" href="<?= base_url('/Login/logout') ?>">
                             <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
                             Cerrar sesión
                         </a>
@@ -146,9 +147,9 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="index.html"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href=""> <i class="me-2" data-feather="x-circle"></i>Error</a>
-                                    <a class="nav-link" href="buscar.html"><i class="me-2" data-feather="search"></i>Buscar</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
+                                    <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
                             </div>
                             
@@ -159,7 +160,12 @@
                     <div class="sidenav-footer">
                         <div class="sidenav-footer-content">
                             <div class="sidenav-footer-subtitle">Registrado como:</div>
-                            <div class="sidenav-footer-title">Yerani Samperio</div>
+                            <div class="sidenav-footer-title">
+                                <?php 
+                                    $session = session();
+                                    echo $session->get('usuario'); 
+                                ?>
+                            </div>
                         </div>
                     </div>
                 </nav>
@@ -173,8 +179,8 @@
                                 <div class="row align-items-center justify-content-between">
                                     <div class="col-auto mt-4">
                                         <h1 class="page-header-title">
-                                            <div class="page-header-icon"><i data-feather="alert-circle"></i></div>
-                                            Constancias no generadas
+                                            <div class="page-header-icon"><i data-feather="archive"></i></div>
+                                            Procesos realizados
                                         </h1>
                                         <div class="page-header-subtitle">Asistente para la gestión de constancias de la Dirección General de Bachillerato.</div>
                                     </div>
@@ -193,7 +199,7 @@
                                             <div class="col-xl-8 col-xxl-12">
                                                 <div class="text-center text-xl-start text-xxl-center mb-4 mb-xl-0 mb-xxl-4">
                                                     <h1 class="text-primary">¡Revisemos!</h1>
-                                                    <p class="text-gray-700 mb-0">En la siguiente lista se muestran los archivos que no se crearon.</p>
+                                                    <p class="text-gray-700 mb-0">Aquí puedes consultar los procesos de carga de archivos.</p>
                                                 </div>
                                             </div>
                                         
@@ -202,37 +208,25 @@
                                                 <table  id="datatablesSimple" class="table mb-0">
                                                     <thead>
                                                         <tr>
-                                                            <th class="border-gray-200" scope="col">Folio</th>
-                                                            <th class="border-gray-200" scope="col">Nombre completo</th>
-                                                            <th class="border-gray-200" scope="col">Observaciones</th>
-                                                            <th class="border-gray-200" scope="col">Estado</th>
+                                                            <th class="border-gray-200" scope="col">Usuario</th>
+                                                            <th class="border-gray-200" scope="col"># afectados</th>
+                                                            <th class="border-gray-200" scope="col">Fecha creación</th>
+                                                            <th class="border-gray-200" scope="col">Última actualización</th>
+                                                            <th class="border-gray-200" scope="col">...</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr>
-                                                            <td>#39201</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38594</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-success">Recuperado</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38223</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>Error al generar el PDF</td>
-                                                            <td><span class="badge bg-red text-white">Error</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38125</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
-                                                        </tr>
+                                                        <?php if (isset($procesos)): ?>
+                                                            <?php foreach ($procesos as $proceso): ?>
+                                                                <tr>
+                                                                    <td><?php echo $proceso['usuario'] ?></td>
+                                                                    <td><?php echo $proceso['afectados'] ?></td>
+                                                                    <td><?php echo $proceso['fecha_created'] ?></td>
+                                                                    <td><?php echo $proceso['fecha_update'] ?></td>
+                                                                    <td><a href="<?= base_url('/Carga_archivos/l_process') ?>?i=<?php echo $proceso['id'] ?>"><span class="badge bg-success">Detalles</span></a></td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        <?php endif; ?>
                                                     </tbody>
                                                 </table>
                                             </div>
