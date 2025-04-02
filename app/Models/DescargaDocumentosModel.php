@@ -23,8 +23,8 @@ class DescargaDocumentosModel extends Model
         'area_solicita', 
         'firma', 
         'cadena_original', 
-        'fecha_creacion', 
-        'fecha_actualizacion'
+        'fecha_created', 
+        'fecha_update'
     ];
 
     // Definir los tipos de campos para JSON
@@ -35,8 +35,8 @@ class DescargaDocumentosModel extends Model
 
     // Definir las fechas automáticas para creación y actualización
     protected $useTimestamps = true;
-    protected $createdField  = 'fecha_creacion';
-    protected $updatedField  = 'fecha_actualizacion';
+    protected $createdField  = 'fecha_created';
+    protected $updatedField  = 'fecha_update';
 
     protected $validationMessages = [
         'folio' => [

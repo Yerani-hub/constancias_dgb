@@ -132,8 +132,8 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="index.html"><i class="me-2" data-feather="file-plus"></i> Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="error_carga.html"><i class="me-2" data-feather="x-circle"></i> Error</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"><i class="me-2" data-feather="archive"></i> Procesos</a>
                                     <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i> Buscar</a>
                                 </nav>
                             </div>
