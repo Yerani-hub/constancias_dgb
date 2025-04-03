@@ -23,7 +23,7 @@
             <!-- * * Tip * * You can use text or an image for your navbar brand.-->
             <!-- * * * * * * When using an image, we recommend the SVG format.-->
             <!-- * * * * * * Dimensions: Maximum height: 32px, maximum width: 240px-->
-            <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="index.html">Dirección General de Bachillerato</a>
+            <label class="navbar-brand pe-3 ps-4 ps-lg-2" href="index.html">Dirección General de Bachillerato</label>
             <!-- Navbar Search Input-->
             <!-- * * Note: * * Visible only on and above the lg breakpoint
             <form class="form-inline me-auto d-none d-lg-block me-3">
@@ -148,7 +148,7 @@
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
                                     <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="error_carga.html"> <i class="me-2" data-feather="archive"></i>Procesos</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
                                     <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
                             </div>
@@ -180,7 +180,7 @@
                                     <div class="col-auto mt-4">
                                         <h1 class="page-header-title">
                                             <div class="page-header-icon"><i data-feather="alert-circle"></i></div>
-                                            Constancias no generadas
+                                            Log del proceso
                                         </h1>
                                         <div class="page-header-subtitle">Asistente para la gestión de constancias de la Dirección General de Bachillerato.</div>
                                     </div>
@@ -199,46 +199,52 @@
                                             <div class="col-xl-8 col-xxl-12">
                                                 <div class="text-center text-xl-start text-xxl-center mb-4 mb-xl-0 mb-xxl-4">
                                                     <h1 class="text-primary">¡Revisemos!</h1>
-                                                    <p class="text-gray-700 mb-0">En la siguiente lista se muestran los archivos que no se crearon.</p>
+                                                    <p class="text-gray-700 mb-0">En la siguiente lista se muestran el estatus de las constancias cargadas durante este proceso.</p>
                                                 </div>
                                             </div>
-                                        
+
+                                            <?php if ($contador): ?>
+                                                <?php if ($contador > 0){ ?>
+                                                    <div class="tab-pane active my-4" id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
+                                                        <a class="btn btn-outline-primary btn-lg me-2 my-1" href="<?= base_url("Carga_archivos/download?file_name=" . $zip) ?>" type="button" ><i class="me-2" data-feather="download"> </i> Descargar ZIP</a>
+                                                        <label for="formFile" class="form-label">El archivo está listo para su descarga.</label>
+                                                    </div>
+                                                <?php } ?>
+                                            <?php endif; ?>
+
                                             <!-- Billing history table-->
                                             <div class="table-responsive table-billing-history">
                                                 <table  id="datatablesSimple" class="table mb-0">
                                                     <thead>
                                                         <tr>
                                                             <th class="border-gray-200" scope="col">Folio</th>
-                                                            <th class="border-gray-200" scope="col">Nombre completo</th>
+                                                            <th class="border-gray-200" scope="col">Fila en csv</th>
                                                             <th class="border-gray-200" scope="col">Observaciones</th>
                                                             <th class="border-gray-200" scope="col">Estado</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr>
-                                                            <td>#39201</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38594</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-success">Recuperado</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38223</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>Error al generar el PDF</td>
-                                                            <td><span class="badge bg-red text-white">Error</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>#38125</td>
-                                                            <td>Nombre Alumno</td>
-                                                            <td>El folio está repetido</td>
-                                                            <td><span class="badge bg-orange text-white">Pending</span></td>
-                                                        </tr>
+                                                        <?php if (isset($logs)): ?>
+                                                            <?php foreach ($logs as $log): ?>
+                                                                <?php $datos = json_decode($log['info_csv'], true); ?>
+                                                                <tr>
+                                                                    <td><?= esc($datos['folio'] ?? 'N/A') ?></td>
+                                                                    <td><?= esc($datos['fila'] ?? 'N/A') ?></td>
+                                                                    <td><?= esc($log['mensaje'] ?? 'N/A') ?></td>
+                                                                    <?php
+                                                                        if($log['estatus'] == 'creado'){
+                                                                    ?>
+                                                                        <td><span class="badge bg-success text-white"><?= esc($log['estatus']) ?></span></td>
+                                                                    <?php
+                                                                        } else if($log['estatus'] == 'error'){
+                                                                    ?>
+                                                                        <td><span class="badge bg-red text-white"><?= esc($log['estatus']) ?></span></td>
+                                                                    <?php
+                                                                        }
+                                                                    ?>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        <?php endif; ?>
                                                     </tbody>
                                                 </table>
                                             </div>

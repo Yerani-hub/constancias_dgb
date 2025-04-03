@@ -1,6 +1,7 @@
 <?php namespace App\Models;
 
 use CodeIgniter\Model;
+use Config\Database;
 
 class LogDetalleProcesoModel extends Model
 {
@@ -55,5 +56,16 @@ class LogDetalleProcesoModel extends Model
     public function getByProceso($id_proceso)
     {
         return $this->where('id_proceso', $id_proceso)->findAll();
+    }
+
+    public function get_url($id_proceso)
+    {
+        $db = Database::connect('default');
+        $table = $db->table('tbl_log_detalles_procesos_dgb l');
+        $query = $table->select("p.url, p.zip");
+        $query = $table->join("tbl_ent_procesos p", "p.id=l.id_proceso", "inner");
+        $query = $table->where("p.id", $id_proceso);
+        $query = $table->get();
+        return $query->getRowArray();
     }
 }

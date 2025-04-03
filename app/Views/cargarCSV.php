@@ -147,7 +147,7 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Cargar_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
                                     <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
                                     <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
@@ -199,13 +199,13 @@
                                                     <p class="text-gray-700 mb-0">Para generar las constancias nuevas, cargue el archivo CSV.</p>
                                                 </div>
                                             </div>
-                                            <form action="<?= base_url('/Carga_archivos/subirCSV') ?>" method="post" enctype="multipart/form-data">
+                                            <form id="form" action="<?= base_url('/Carga_archivos/subirCSV') ?>" method="post" enctype="multipart/form-data">
                                             <div class="row">
                                                 <div class="col-12 col-md-6 mb-4">
                                                     <label for="formFile" class="form-label">Subir CSV</label>
                                                     <input class="form-control" type="file" id="formFile" name="archivo_csv" accept=".csv">
-                                                    <div class="tab-pane active " id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
-                                                        <button class="btn btn-outline-primary btn-lg me-2 my-3" type="submit" name="uploadBtn"><i class="me-2" data-feather="upload"> </i> Cargar</button>
+                                                    <div class="tab-pane active " id="buttonsDefaultHtml" role="tabpanel">
+                                                        <button class="btn btn-outline-primary btn-lg me-2 my-3" type="submit" name="uploadBtn" id="uploadBtn"><i class="me-2" data-feather="upload"> </i> Cargar</button>
                                                     </div>
                                                     <div class="col-12">
                                                         <?php if (isset($_SESSION['info'])): ?>
@@ -223,13 +223,6 @@
                                                                 </div>
                                                             <?php } ?>
                                                         <?php endif; ?>
-                                                    </div>
-                                                    
-                                                    <div class="tab-pane active my-4" id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
-                                                        <button class="btn btn-outline-dark btn-lg me-2 my-1" type="button" disabled><i class="me-2" data-feather="download"> </i> Descargar ZIP</button>
-                                                        
-                                                        <button class="btn btn-outline-primary btn-lg me-2 my-1" type="button" ><i class="me-2" data-feather="download"> </i> Descargar ZIP</button>
-                                                        <label for="formFile" class="form-label">El archivo está listo para su descarga.</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-12 col-md-6 text-center">
@@ -260,5 +253,16 @@
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
         <script src="js/scripts.js"></script>
+        <script>
+            document.getElementById('form').addEventListener('submit', function (event) {
+                const uploadBtn = document.getElementById('uploadBtn');
+                uploadBtn.disabled = true;
+            // Cambiar el texto del botón a "Cargando..."
+            uploadBtn.innerHTML = '<i class="me-2" data-feather="upload"></i> Cargando...';
+            });
+        </script>
+
+
+
     </body>
 </html>

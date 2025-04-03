@@ -5,10 +5,10 @@ use Config\Database;
 
 class ProcesoModel extends Model
 {
-    protected $table      = 'tbl_ent_procesos p'; // Nombre de la tabla
+    protected $table      = 'tbl_ent_procesos'; // Nombre de la tabla
     protected $primaryKey = 'id'; // Clave primaria
 
-    protected $allowedFields = ['id_usuario', 'afectados', 'zip', 'version_constancia', 'fecha_created', 'fecha_update'];
+    protected $allowedFields = ['id_usuario', 'afectados', 'url', 'zip', 'version_constancia', 'fecha_created', 'fecha_update'];
 
     // Definir las fechas automáticas para creación y actualización
     protected $useTimestamps = true;
