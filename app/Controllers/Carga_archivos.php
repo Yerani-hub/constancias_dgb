@@ -5,6 +5,8 @@ use Dompdf\Options;
 
 class Carga_archivos extends BaseController
 {
+    const URL_ARCHIVOS = "/Users/yerani/Downloads/proyectos/constancias_dgb/public/constancias/";
+
     public function __construct(){
         $this->session = \Config\Services::session();   
     }
@@ -43,25 +45,34 @@ class Carga_archivos extends BaseController
         
                     $fila_numero = 2;
                     while (($datos = fgetcsv($handle, 1000, ',')) !== FALSE) {
+
+                        $log_data = $this->get_data_proceso_json($datos, $fila_numero);
+
                         if (count($datos) !== count($columnas_necesarias)) {
                             $errores[] = [
-                                'fila' => $fila_numero,
-                                'mensaje' => 'Faltan columnas en la fila ' . $fila_numero,
-                                'estatus' => 'error'
+                                'info_csv' => json_encode($log_data),
+                                'estatus' => 'error',
+                                'mensaje' => 'Faltan columnas en la fila ' . $fila_numero . ' del archivo CSV.',
+                                'id_proceso' => $proceso['id_insertado'],
+                                'folio' => trim($datos[7]),
+                                'fila' => $fila_numero
                             ];
                         } else {
                             $obs = '';
                             foreach ($columnas_necesarias as $index => $columna) {
                                 if (empty(trim($datos[$index]))) {
-                                    $obs .= '* La columna ' . $columna . ' está vacía<br>';
+                                    $obs .= '* La columna ' . $columna . ' está vacía';
                                 }
                             }
         
                             if ($obs != '') {
                                 $errores[] = [
-                                    'fila' => $fila_numero,
+                                    'info_csv' => json_encode($log_data),
+                                    'estatus' => 'error',
                                     'mensaje' => $obs,
-                                    'estatus' => 'error'
+                                    'id_proceso' => $proceso['id_insertado'],
+                                    'folio' => trim($datos[7]),
+                                    'fila' => $fila_numero
                                 ];
                             } else {
                                 $filas_validas[] = [
@@ -78,7 +89,8 @@ class Carga_archivos extends BaseController
                                     'firma' => json_encode(['autoridad' => trim($datos[6])]),
                                     'cadena_original' => '',
                                     'nombre_individual' => trim($datos[0]),
-                                    'apellidos' => trim($datos[1]) . ' ' . trim($datos[2])
+                                    'apellidos' => trim($datos[1]) . ' ' . trim($datos[2]),
+                                    'info_csv' => json_encode($log_data)
                                 ];
                             }
                         }
@@ -89,41 +101,64 @@ class Carga_archivos extends BaseController
 
                 // Crear la carpeta con la fecha y hora actual (una sola vez)
                 $nombre_carpeta = date('Y-m-d_H-i-s');
-                $carpeta_destino = "/Users/yerani/Downloads/proyectos/constancias_dgb/public/constancias/" . $nombre_carpeta;
+                $carpeta_destino = self::URL_ARCHIVOS . $nombre_carpeta;
                 if (!is_dir($carpeta_destino)) {
                     mkdir($carpeta_destino, 0777, true);
                 }
 
                 // Dividir las filas en lotes de 10
                 $lotes = array_chunk($filas_validas, 100);  // 100 elementos por lote
+
                 $db = \Config\Database::connect();
                 $model = new \App\Models\DescargaDocumentosModel();
 
                 foreach ($lotes as $lote) {
                     foreach ($lote as $fila) {
                         try {
-                            $pdf = $this->generar_pdf($fila, $carpeta_destino);
+                            $existe = $this->get_folio($fila['folio']);
 
-                            if($pdf['estatus'] == 'creado'){
-                                $model->insert($fila); 
-                                
-                                $creados[] = [
-                                    'folio' => $pdf['folio'],
-                                    'mensaje' => $pdf['mensaje'],
-                                    'estatus' => $pdf['estatus']
-                                ];
+                            if(!$existe){
+                                $pdf = $this->generar_pdf($fila, $carpeta_destino);
+
+                                if($pdf['estatus'] == 'creado'){
+                                    $model->insert($fila); 
+
+                                    $creados[] = [
+                                        'info_csv' => $fila['info_csv'],
+                                        'estatus' => $pdf['estatus'],
+                                        'mensaje' => $pdf['mensaje'],
+                                        'id_proceso' => $proceso['id_insertado'],
+                                        'folio' => $pdf['folio'],
+                                        'fila' => $fila['fila']
+                                    ];
+                                }else{
+                                    $errores[] = [
+                                        'info_csv' => $fila['info_csv'],
+                                        'estatus' => $pdf['estatus'],
+                                        'mensaje' => $pdf['mensaje'],
+                                        'id_proceso' => $proceso['id_insertado'],
+                                        'folio' => $pdf['folio'],
+                                        'fila' => $fila['fila']
+                                    ];
+                                }
                             }else{
                                 $errores[] = [
-                                    'folio' => $pdf['folio'],
-                                    'mensaje' => $pdf['mensaje'],
-                                    'estatus' => $pdf['estatus']
+                                    'info_csv' => $fila['info_csv'],
+                                    'estatus' => 'error',
+                                    'mensaje' => 'El folio ya encuentra registrado.',
+                                    'id_proceso' => $proceso['id_insertado'],
+                                    'folio' => $fila['folio'],
+                                    'fila' => $fila['fila']
                                 ];
                             }
                         } catch (\Exception $e) {
                             $errores[] = [
-                                'folio' => $fila['folio'],
+                                'info_csv' => $fila['info_csv'],
+                                'estatus' => 'error',
                                 'mensaje' => 'Error al guardar en BD: ' . $e->getMessage(),
-                                'estatus' => 'error'
+                                'id_proceso' => $proceso['id_insertado'],
+                                'folio' => $fila['folio'],
+                                'fila' => $fila['fila']
                             ];
                         }
                     }
@@ -133,11 +168,15 @@ class Carga_archivos extends BaseController
                 $archivo_zip = $this->comprimirCarpeta($carpeta_destino);
 
                 $this->eliminarCarpeta($carpeta_destino);
-            
-                // Determinar estatus final
+
+                $this->update_proceso($proceso['id_insertado'], count($creados), self::URL_ARCHIVOS, $nombre_carpeta . '.zip');
+
+                $logs = array_merge($errores, $creados);
+                $this->insert_logs($logs);
+                
                 $respuesta = ["estatus" => true, "mensaje" => "Proceso completado.", "errores" => $errores, "archivo_zip" => $nombre_carpeta . ".zip", "pdfs_generados" => count($creados)];
             
-                return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $respuesta);
+                return redirect()->to(base_url("/index.php/Carga_archivos/l_process?i=" . $proceso['id_insertado']))->with('info', $respuesta);
             }else{
                 return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $proceso);
             }
@@ -200,6 +239,19 @@ class Carga_archivos extends BaseController
         return ["estatus" => true, "mensaje" => "Archivo válido."];
     }    
 
+    private function get_folio($folio){
+        $db = \Config\Database::connect();
+        $model = new \App\Models\DescargaDocumentosModel();
+
+        $constancia = $model->getByFolio($folio);
+
+        if($constancia){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     private function insert_proceso(){
         $session = session();
 
@@ -207,7 +259,7 @@ class Carga_archivos extends BaseController
         $model = new \App\Models\ProcesoModel();
 
         $data = [
-            'id_usuario' => $session->get('usuario'),
+            'id_usuario' => $session->get('id_usuario'),
             'afectados' => 0,
             'zip' => '',
             'version_constancia' => '1',
@@ -222,6 +274,44 @@ class Carga_archivos extends BaseController
 
             return ["estatus" => false, "mensaje" => $e->getMessage()];
         }
+    }
+
+    private function update_proceso($proceso, $afectados, $url, $zip){
+        $model = new \App\Models\ProcesoModel();
+
+        $data = [
+            'afectados' => $afectados,
+            'url' => $url,
+            'zip' => $zip
+        ];
+
+        $model->update($proceso, $data);
+    }
+
+    private function insert_logs($logs){
+        $session = session();
+
+        // Guardar en la base de datos si hay filas válidas
+        $model = new \App\Models\LogDetalleProcesoModel();
+
+        foreach($logs as $log){
+            $model->insert($log);
+        }
+    }
+
+    private function get_data_proceso_json($datos, $fila){
+        $data = [
+            'fila' => trim($fila),
+            'folio' => trim($datos[7]),
+            'nombre' => trim($datos[0]),
+            'primerApellido' => trim($datos[1]), 
+            'segundoApellido' => trim($datos[2]),
+            'fechasInicio' => trim($datos[3]),
+            'fechasFin' => trim($datos[4]),
+            'autoridad' => trim($datos[6])
+        ];
+
+        return $data;
     }
 
     private function fechas_esp(){
@@ -284,8 +374,11 @@ class Carga_archivos extends BaseController
         try {
             $nombre = htmlspecialchars($fila['nombre_individual']);
             $apellidos = htmlspecialchars($fila['apellidos']);
+            $folio = htmlspecialchars($fila['folio']);
             $autoridad = json_decode($fila['firma'], true)['autoridad'];
             $fecha = $this->fechas_esp();
+            $vol = "I/" . date("Y");
+            $fecha = date("d/m/Y");
 
             // Crear instancia de DOMPDF
             $dompdf = new Dompdf();
@@ -294,149 +387,190 @@ class Carga_archivos extends BaseController
             $dompdf = new Dompdf($options);
             
             $html = '<html>
-                        <head>
-                            <style>
-                                @page {
-                                    margin: 0px;
-                                }
+                            <head>
+                                <style>
+                                    @page {
+                                        margin: 0px;
+                                    }
 
-                                body { 
-                                    margin-top: 0px;
-                                    margin-left: 0px;
-                                    margin-right: 0px;
-                                    margin-bottom: 0px;
-                                }
+                                    body { 
+                                        margin-top: 0px;
+                                        margin-left: 0px;
+                                        margin-right: 0px;
+                                        margin-bottom: 0px;
+                                    }
 
-                                header {
-                                    position: fixed;
-                                    top: 0px;
-                                    left: 0px;
-                                    right: 0px;
-                                    height: 100px;
-                                    text-align: center;
-                                    font-size: 20px;
-                                    font-weight: bold;
-                                    padding: 20px 0;
-                                }
+                                    header {
+                                        position: fixed;
+                                        top: 0px;
+                                        left: 0px;
+                                        right: 0px;
+                                        height: 100px;
+                                        text-align: center;
+                                        font-size: 20px;
+                                        font-weight: bold;
+                                        padding: 20px 0;
+                                    }
 
-                                .encabezado{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 16pt;
-                                    line-height: 1.0;
-                                    color: #6a6a6a;
-                                }
+                                    .encabezado{
+                                        font-family: patria;
+                                        font-style: light;
+                                        font-size: 16pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
 
-                                .constancia{
-                                    font-family: notosans;
-                                    font-style: bold;
-                                    font-size: 48pt;
-                                    line-height: 1.0;
-                                    color: #b89c27;
-                                }
+                                    .constancia{
+                                        font-family: patria;
+                                        font-style: bold;
+                                        font-size: 48pt;
+                                        line-height: 1.0;
+                                        color: #b89c27;
+                                    }
 
-                                .body1{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 18pt;
-                                    line-height: 1.0;
-                                    color: #6a6a6a;
-                                }
+                                    .body1{
+                                        font-family: patria;
+                                        font-style: light;
+                                        font-size: 18pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
 
-                                .body2{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 24pt;
-                                    line-height: 1.0;
-                                    color: #6a6a6a;
-                                }
+                                    .body2{
+                                        font-family: patria;
+                                        font-style: light;
+                                        font-size: 24pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
 
-                                .body3{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 12pt;
-                                    line-height: 1.0;
-                                    color: #6a6a6a;
-                                }
+                                    .body3{
+                                        font-family: notosans;
+                                        font-style: normal;
+                                        font-size: 12pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
 
-                                .body4{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 14pt;
-                                    line-height: 1.0;
-                                    color: #6a6a6a;
-                                }
+                                    .body4{
+                                        font-family: notosans;
+                                        font-style: normal;
+                                        font-size: 14pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
 
-                                .body5{
-                                    font-family: notosans;
-                                    font-style: normal;
-                                    font-size: 14pt;
-                                    line-height: 1.0;
-                                    color: #b89c27;
-                                }
+                                    .body5{
+                                        font-family: patria;
+                                        font-style: normal;
+                                        font-size: 14pt;
+                                        line-height: 1.0;
+                                        color: #b89c27;
+                                    }
 
-                                table, tr, td, th{
-                                border: solid white 1px;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <img class="img-fluid" style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
-                            
-                            <table style="position: absolute;  top: 50px; left: 40px; width: 680px;">
-                                <tbody>
-                                    <tr>
-                                        <td align="center"><img style="width: 100%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/logos_mujeres.jpg"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    .body6{
+                                        font-family: notosans;
+                                        font-style: normal;
+                                        font-size: 9pt;
+                                        line-height: 1.0;
+                                        color: #6a6a6a;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+                                
+                                <table style="position: absolute;  top: 50px; left: 40px; width: 680px;">
+                                    <tbody>
+                                        <tr>
+                                            <td align="center"><img style="width: 100%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/logos_mujeres.jpg"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
 
-                            <table style="position: absolute;  top: 180px; left: 40px; width: 680px;">
-                                <tbody>
-                                    <tr>
-                                        <td align="center" class="encabezado">
-                                            LA DIRECCIÓN GENERAL DEL BACHILLERATO Y<br>EL INSTITUTO NACIONAL DE LAS MUJERES<br>OTORGAN LA PRESENTE
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="constancia" style="padding: 20px;">
-                                            <b>CONSTANCIA</b>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="body1" style="padding-bottom: 20px;">
-                                            A
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="body2" style="padding-bottom: 20px;">
-                                            ' . $nombre .'<br>' . $apellidos . '
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="body3" style="padding: 5px;">
-                                            Por su participación en el curso<br>“¡Sumate al protocolo!”
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" style="padding-top: 100px;">
-                                            <hr style="border: 0.5px solid #b89c27; width: 45%; margin: 20px auto;">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="body4" style="padding-bottom: 20px;">
-                                            <b>' . $autoridad . '</b><br>Director/ Maestro/Responsable
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" class="body5">
-                                            <b>CIUDAD DE MÉXICO, ' . $fecha . '</b>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </body>
-                    </html>';
+                                <table style="position: absolute;  top: 180px; left: 40px; width: 680px;">
+                                    <tbody>
+                                        <tr>
+                                            <td align="center" class="encabezado">
+                                                LA DIRECCIÓN GENERAL DEL BACHILLERATO Y<br>EL INSTITUTO NACIONAL DE LAS MUJERES<br>OTORGAN LA PRESENTE
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="constancia" style="padding: 20px;">
+                                                <b>CONSTANCIA</b>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="body1" style="padding-bottom: 20px;">
+                                                A
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="body2" style="padding-bottom: 20px;">
+                                                ' . $nombre .'<br>' . $apellidos . '
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="body3" style="padding: 5px;">
+                                                Por su participación en el curso<br>“¡Sumate al protocolo!”
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" style="padding-top: 100px;">
+                                                <hr style="border: 0.5px solid #b89c27; width: 45%; margin: 20px auto;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="body4" style="padding-bottom: 20px;">
+                                                <b>' . $autoridad . '</b><br>Director/ Maestro/Responsable
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" class="body5">
+                                                <b>CIUDAD DE MÉXICO, ' . $fecha . '</b>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div style="page-break-after:always;"></div>
+
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+
+                                <table style="position: absolute;  top: 750px; left: 40px; width: 680px;">
+                                    <tbody>
+                                        <tr>
+                                            <td align="center"><img style="width: 90%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/folio2.png"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <table style="position: absolute; top: 769px; left: 480px; width: 120px;">
+                                    <tbody>
+                                        <tr>
+                                            <td align="center" style="width:120px; height: 30px;" class="body6">
+                                                ' . $vol . '
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" style="width:120px; height: 35px;" class="body6">
+                                                ' . $folio . '
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" style="width:120px; height: 33px;" class="body6">
+                                                ' . $fecha . '
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" style="width:120px; height: 32px;" class="body6">
+                                                JARS
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </body>
+                        </html>';
 
             // Cargar y renderizar el PDF
             $dompdf->loadHtml($html);
@@ -459,7 +593,7 @@ class Carga_archivos extends BaseController
     public function download()
     {
         $archivo = $_GET['file_name'];
-        $file_path = '/Users/yerani/Downloads/proyectos/constancias_dgb/public/constancias/' . $archivo;
+        $file_path = self::URL_ARCHIVOS . $archivo;
 
         // Verifica si el archivo existe
         if (file_exists($file_path)) {
@@ -693,6 +827,28 @@ class Carga_archivos extends BaseController
 
     public function l_process()
     {
-        return view('log_proceso');
+        $id_proceso = $_GET['i'];
+        $c = 0;
+
+        // Busqueda de logs registrados en bd
+        $model = new \App\Models\LogDetalleProcesoModel();
+        $logs = $model->getByProceso($id_proceso);
+
+        $url_zip = $model->get_url($id_proceso);
+
+        foreach($logs as $log){
+            if($log['estatus'] == 'creado'){
+                $c ++;
+            }
+        }
+
+        $data = array(
+            'logs' => $logs,
+            'url' => $url_zip['url'],
+            'zip' => $url_zip['zip'],
+            'contador' => $c
+        );
+
+        return view('log_proceso', $data);
     }
 }
