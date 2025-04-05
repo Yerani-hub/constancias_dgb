@@ -108,7 +108,7 @@
                             </div>
                         </h6>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="<?= base_url('/Login/logout') ?>">
+                        <a class="dropdown-item" href="<?= base_url('index.php/Login/logout') ?>">
                             <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
                             Cerrar sesión
                         </a>
@@ -147,9 +147,9 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
-                                    <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
+                                    <a class="nav-link" href="<?= base_url('index.php/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
                             </div>
                             
@@ -223,7 +223,7 @@
                                                                     <td><?php echo $proceso['afectados'] ?></td>
                                                                     <td><?php echo $proceso['fecha_created'] ?></td>
                                                                     <td><?php echo $proceso['fecha_update'] ?></td>
-                                                                    <td><a href="<?= base_url('/Carga_archivos/l_process') ?>?i=<?php echo $proceso['id'] ?>"><span class="badge bg-success">Detalles</span></a></td>
+                                                                    <td><a href="<?= base_url('index.php/Carga_archivos/l_process') ?>?i=<?php echo $proceso['id'] ?>"><span class="badge bg-success">Detalles</span></a></td>
                                                                 </tr>
                                                             <?php endforeach; ?>
                                                         <?php endif; ?>

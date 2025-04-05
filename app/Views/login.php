@@ -26,7 +26,7 @@
                                     <div class="bg-img-cover" style="background-image: url('assets/img/header_login.svg')"><div style="height: 8rem"></div></div>
                                     <div class="card-body"> <hr />
                                         <!-- Login form-->
-                                        <form action="<?= base_url('/Login/processLogin') ?>" method="post">
+                                        <form action="<?= base_url('index.php/Login/processLogin') ?>" method="post">
                                             <!-- Form Group (email address)-->
                                             <div class="my-3">
                                                 <label class="small mb-1" for="inputUser">Correo electrónico</label>

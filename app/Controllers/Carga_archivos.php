@@ -6,6 +6,8 @@ use Dompdf\Options;
 class Carga_archivos extends BaseController
 {
     const URL_ARCHIVOS = "/Users/yerani/Downloads/proyectos/constancias_dgb/public/constancias/";
+    const URL_IMAGES = "http://localhost/constancias_dgb/public/images/imagenes_sec_mujeres_2025/";
+    
 
     public function __construct(){
         $this->session = \Config\Services::session();   
@@ -23,167 +25,184 @@ class Carga_archivos extends BaseController
     }
 
     public function subirCSV()
-    {
-        $archivo = $_FILES['archivo_csv'];
-        $respuesta = $this->validar_csv($archivo);
-    
-        $errores = []; // Aquí se guardarán todos los errores encontrados
-        $creados = []; // Aquí se guardarán todos los errores encontrados
-        $filas_validas = []; // Guardaremos solo las filas correctas
-    
-        if ($respuesta["estatus"]) {
-            $proceso = $this->insert_proceso();
+{
+    $archivo = $_FILES['archivo_csv'];
+    $respuesta = $this->validar_csv($archivo);
 
-            if ($proceso["estatus"]) {
-                if (($handle = fopen($archivo['tmp_name'], 'r')) !== FALSE) {
-                    $cabeceras = fgetcsv($handle, 1000, ',');
-                    $columnas_necesarias = [
-                        'nombre', 'primer apellido', 'segundo apellido',
-                        'fecha inicio curso', 'fecha fin curso', 
-                        'calificación', 'autoridad firmante', 'folio'
-                    ];
-        
-                    $fila_numero = 2;
-                    while (($datos = fgetcsv($handle, 1000, ',')) !== FALSE) {
+    $errores = []; 
+    $creados = []; 
+    $filas_validas = []; 
 
-                        $log_data = $this->get_data_proceso_json($datos, $fila_numero);
+    if ($respuesta["estatus"]) {
+        $proceso = $this->insert_proceso();
 
-                        if (count($datos) !== count($columnas_necesarias)) {
+        if ($proceso["estatus"]) {
+            try {
+                if (($handle = fopen($archivo['tmp_name'], 'r')) === FALSE) {
+                    throw new \Exception("No se pudo abrir el archivo CSV.");
+                }
+
+                $cabeceras = fgetcsv($handle, 1000, ',');
+                $columnas_necesarias = [
+                    'nombre', 'primer apellido', 'segundo apellido',
+                    'fecha inicio curso', 'fecha fin curso', 
+                    'calificación', 'autoridad firmante', 'folio'
+                ];
+
+                $fila_numero = 2;
+                while (($linea = fgets($handle)) !== false) {
+                    // Convertir la línea a UTF-8
+                    $linea =mb_convert_encoding($linea, 'UTF-8', 'Windows-1252');
+                    $datos = str_getcsv($linea, ',');
+
+                    $log_data = $this->get_data_proceso_json($datos, $fila_numero);
+
+                    if (count($datos) !== count($columnas_necesarias)) {
+                        $errores[] = [
+                            'info_csv' => json_encode($log_data),
+                            'estatus' => 'error',
+                            'mensaje' => 'Faltan columnas en la fila ' . $fila_numero . ' del archivo CSV.',
+                            'id_proceso' => $proceso['id_insertado'],
+                            'folio' => trim($datos[7] ?? ''),
+                            'fila' => $fila_numero
+                        ];
+                    } else {
+                        $obs = '';
+                        foreach ($columnas_necesarias as $index => $columna) {
+                            if (empty(trim($datos[$index]))) {
+                                $obs .= '* La columna ' . $columna . ' está vacía ';
+                            }
+                        }
+
+                        if ($obs != '') {
                             $errores[] = [
                                 'info_csv' => json_encode($log_data),
                                 'estatus' => 'error',
-                                'mensaje' => 'Faltan columnas en la fila ' . $fila_numero . ' del archivo CSV.',
+                                'mensaje' => $obs,
                                 'id_proceso' => $proceso['id_insertado'],
                                 'folio' => trim($datos[7]),
                                 'fila' => $fila_numero
                             ];
                         } else {
-                            $obs = '';
-                            foreach ($columnas_necesarias as $index => $columna) {
-                                if (empty(trim($datos[$index]))) {
-                                    $obs .= '* La columna ' . $columna . ' está vacía';
-                                }
-                            }
-        
-                            if ($obs != '') {
-                                $errores[] = [
-                                    'info_csv' => json_encode($log_data),
-                                    'estatus' => 'error',
-                                    'mensaje' => $obs,
+                            $filas_validas[] = [
+                                'fila' => $fila_numero,
+                                'folio' => trim($datos[7]),
+                                'nombre' => trim($datos[0]) . ' ' . trim($datos[1]) . ' ' . trim($datos[2]),
+                                'id_tipo_documento' => 1,
+                                'fechasCurso' => trim($datos[3]) . ' - ' . trim($datos[4]),
+                                'estatus' => 1,
+                                'folio_figura' => '',
+                                'tipo_figura' => '',
+                                'datos' => json_encode(['calificacion' => trim($datos[5])]),
+                                'area_solicita' => 'DGB',
+                                'firma' => json_encode(['autoridad' => trim($datos[6])]),
+                                'cadena_original' => '',
+                                'nombre_individual' => trim($datos[0]),
+                                'apellidos' => trim($datos[1]) . ' ' . trim($datos[2]),
+                                'info_csv' => json_encode($log_data)
+                            ];
+                        }
+                    }
+                    $fila_numero++;
+                }
+                fclose($handle);
+            } catch (\Throwable $e) {
+                $respuesta = [
+                    "estatus" => false,
+                    "mensaje" => "Error al procesar el archivo CSV: " . $e->getMessage()
+                ];
+                return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $respuesta);
+            }
+
+            $nombre_carpeta = date('Y-m-d_H-i-s');
+            $carpeta_destino = self::URL_ARCHIVOS . $nombre_carpeta;
+            if (!is_dir($carpeta_destino)) {
+                mkdir($carpeta_destino, 0777, true);
+            }
+
+            $lotes = array_chunk($filas_validas, 100);
+            $db = \Config\Database::connect();
+            $model = new \App\Models\DescargaDocumentosModel();
+
+            foreach ($lotes as $lote) {
+                foreach ($lote as $fila) {
+                    try {
+                        $existe = $this->get_folio($fila['folio']);
+
+                        if (!$existe) {
+                            $pdf = $this->generar_pdf($fila, $carpeta_destino);
+
+                            if ($pdf['estatus'] == 'creado') {
+                                $model->insert($fila); 
+
+                                $creados[] = [
+                                    'info_csv' => $fila['info_csv'],
+                                    'estatus' => $pdf['estatus'],
+                                    'mensaje' => $pdf['mensaje'],
                                     'id_proceso' => $proceso['id_insertado'],
-                                    'folio' => trim($datos[7]),
-                                    'fila' => $fila_numero
+                                    'folio' => $pdf['folio'],
+                                    'fila' => $fila['fila']
                                 ];
                             } else {
-                                $filas_validas[] = [
-                                    'fila' => $fila_numero,
-                                    'folio' => trim($datos[7]),
-                                    'nombre' => trim($datos[0]) . ' ' . trim($datos[1]) . ' ' . trim($datos[2]),
-                                    'id_tipo_documento' => 1,  // Asumiendo un valor por defecto
-                                    'fechasCurso' => trim($datos[3]) . ' - ' . trim($datos[4]),
-                                    'estatus' => 1,
-                                    'folio_figura' => '',
-                                    'tipo_figura' => '',
-                                    'datos' => json_encode(['calificacion' => trim($datos[5])]),
-                                    'area_solicita' => 'DGB',
-                                    'firma' => json_encode(['autoridad' => trim($datos[6])]),
-                                    'cadena_original' => '',
-                                    'nombre_individual' => trim($datos[0]),
-                                    'apellidos' => trim($datos[1]) . ' ' . trim($datos[2]),
-                                    'info_csv' => json_encode($log_data)
-                                ];
-                            }
-                        }
-                        $fila_numero++;
-                    }
-                    fclose($handle);
-                }
-
-                // Crear la carpeta con la fecha y hora actual (una sola vez)
-                $nombre_carpeta = date('Y-m-d_H-i-s');
-                $carpeta_destino = self::URL_ARCHIVOS . $nombre_carpeta;
-                if (!is_dir($carpeta_destino)) {
-                    mkdir($carpeta_destino, 0777, true);
-                }
-
-                // Dividir las filas en lotes de 10
-                $lotes = array_chunk($filas_validas, 100);  // 100 elementos por lote
-
-                $db = \Config\Database::connect();
-                $model = new \App\Models\DescargaDocumentosModel();
-
-                foreach ($lotes as $lote) {
-                    foreach ($lote as $fila) {
-                        try {
-                            $existe = $this->get_folio($fila['folio']);
-
-                            if(!$existe){
-                                $pdf = $this->generar_pdf($fila, $carpeta_destino);
-
-                                if($pdf['estatus'] == 'creado'){
-                                    $model->insert($fila); 
-
-                                    $creados[] = [
-                                        'info_csv' => $fila['info_csv'],
-                                        'estatus' => $pdf['estatus'],
-                                        'mensaje' => $pdf['mensaje'],
-                                        'id_proceso' => $proceso['id_insertado'],
-                                        'folio' => $pdf['folio'],
-                                        'fila' => $fila['fila']
-                                    ];
-                                }else{
-                                    $errores[] = [
-                                        'info_csv' => $fila['info_csv'],
-                                        'estatus' => $pdf['estatus'],
-                                        'mensaje' => $pdf['mensaje'],
-                                        'id_proceso' => $proceso['id_insertado'],
-                                        'folio' => $pdf['folio'],
-                                        'fila' => $fila['fila']
-                                    ];
-                                }
-                            }else{
                                 $errores[] = [
                                     'info_csv' => $fila['info_csv'],
-                                    'estatus' => 'error',
-                                    'mensaje' => 'El folio ya encuentra registrado.',
+                                    'estatus' => $pdf['estatus'],
+                                    'mensaje' => $pdf['mensaje'],
                                     'id_proceso' => $proceso['id_insertado'],
-                                    'folio' => $fila['folio'],
+                                    'folio' => $pdf['folio'],
                                     'fila' => $fila['fila']
                                 ];
                             }
-                        } catch (\Exception $e) {
+                        } else {
                             $errores[] = [
                                 'info_csv' => $fila['info_csv'],
                                 'estatus' => 'error',
-                                'mensaje' => 'Error al guardar en BD: ' . $e->getMessage(),
+                                'mensaje' => 'El folio ya se encuentra registrado.',
                                 'id_proceso' => $proceso['id_insertado'],
                                 'folio' => $fila['folio'],
                                 'fila' => $fila['fila']
                             ];
                         }
+                    } catch (\Exception $e) {
+                        $errores[] = [
+                            'info_csv' => $fila['info_csv'],
+                            'estatus' => 'error',
+                            'mensaje' => 'Error al guardar en BD: ' . $e->getMessage(),
+                            'id_proceso' => $proceso['id_insertado'],
+                            'folio' => $fila['folio'],
+                            'fila' => $fila['fila']
+                        ];
                     }
                 }
+            }
 
-                // Comprimir la carpeta
+            if(count($creados) > 0){
                 $archivo_zip = $this->comprimirCarpeta($carpeta_destino);
-
-                $this->eliminarCarpeta($carpeta_destino);
-
                 $this->update_proceso($proceso['id_insertado'], count($creados), self::URL_ARCHIVOS, $nombre_carpeta . '.zip');
 
-                $logs = array_merge($errores, $creados);
-                $this->insert_logs($logs);
-                
-                $respuesta = ["estatus" => true, "mensaje" => "Proceso completado.", "errores" => $errores, "archivo_zip" => $nombre_carpeta . ".zip", "pdfs_generados" => count($creados)];
-            
-                return redirect()->to(base_url("/index.php/Carga_archivos/l_process?i=" . $proceso['id_insertado']))->with('info', $respuesta);
-            }else{
-                return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $proceso);
             }
-        }else{
-            return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $respuesta);
+            
+            $this->eliminarCarpeta($carpeta_destino);
+            $logs = array_merge($errores, $creados);
+            $this->insert_logs($logs);
+            
+            $respuesta = [
+                "estatus" => true, 
+                "mensaje" => "Proceso completado.", 
+                "errores" => $errores, 
+                "archivo_zip" => $nombre_carpeta . ".zip", 
+                "pdfs_generados" => count($creados)
+            ];
+        
+            return redirect()->to(base_url("/index.php/Carga_archivos/l_process?i=" . $proceso['id_insertado']))->with('info', $respuesta);
+        } else {
+            return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $proceso);
         }
-    }        
+    } else {
+        return redirect()->to(base_url("/index.php/Carga_archivos"))->with('info', $respuesta);
+    }
+}
+   
     
     private function validar_csv($archivo) {
         $respuesta = [];
@@ -478,12 +497,12 @@ class Carga_archivos extends BaseController
                                 </style>
                             </head>
                             <body>
-                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="' . self::URL_IMAGES . 'fondo_mujeres.jpg">
                                 
                                 <table style="position: absolute;  top: 50px; left: 40px; width: 680px;">
                                     <tbody>
                                         <tr>
-                                            <td align="center"><img style="width: 100%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/logos_mujeres.jpg"></td>
+                                            <td align="center"><img style="width: 100%" src= "' . self::URL_IMAGES . 'logos_mujeres.jpg"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -535,12 +554,12 @@ class Carga_archivos extends BaseController
 
                                 <div style="page-break-after:always;"></div>
 
-                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="' . self::URL_IMAGES . 'fondo_mujeres.jpg">
 
                                 <table style="position: absolute;  top: 750px; left: 40px; width: 680px;">
                                     <tbody>
                                         <tr>
-                                            <td align="center"><img style="width: 90%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/folio2.png"></td>
+                                            <td align="center"><img style="width: 90%" src= "' . self::URL_IMAGES . 'folio2.png"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -710,12 +729,12 @@ class Carga_archivos extends BaseController
                                 </style>
                             </head>
                             <body>
-                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="' . self::URL_IMAGES . 'fondo_mujeres.jpg">
                                 
                                 <table style="position: absolute;  top: 50px; left: 40px; width: 680px;">
                                     <tbody>
                                         <tr>
-                                            <td align="center"><img style="width: 100%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/logos_mujeres.jpg"></td>
+                                            <td align="center"><img style="width: 100%" src= "' . self::URL_IMAGES . 'logos_mujeres.jpg"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -767,12 +786,12 @@ class Carga_archivos extends BaseController
 
                                 <div style="page-break-after:always;"></div>
 
-                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/fondo_mujeres.jpg">
+                                <img style="position: absolute; top: -15px; left: 0px; width: 820px; height: 1085px;" src="' . self::URL_IMAGES . 'fondo_mujeres.jpg">
 
                                 <table style="position: absolute;  top: 750px; left: 40px; width: 680px;">
                                     <tbody>
                                         <tr>
-                                            <td align="center"><img style="width: 90%" src= "http://localhost:85/constancias_dgb/public/images/imagenes_sec_mujeres_2025/folio2.png"></td>
+                                            <td align="center"><img style="width: 90%" src= "' . self::URL_IMAGES . 'folio2.png"></td>
                                         </tr>
                                     </tbody>
                                 </table>
