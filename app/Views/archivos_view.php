@@ -93,7 +93,7 @@
                             </div>
                         </h6>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="<?= base_url('/Login/logout') ?>">
+                        <a class="dropdown-item" href="<?= base_url('index.php/Login/logout') ?>">
                             <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
                             Cerrar sesión
                         </a>
@@ -132,9 +132,9 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"><i class="me-2" data-feather="archive"></i> Procesos</a>
-                                    <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i> Buscar</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos/g_process') ?>"><i class="me-2" data-feather="archive"></i> Procesos</a>
+                                    <a class="nav-link" href="<?= base_url('index.php/Buscar') ?>"><i class="me-2" data-feather="search"></i> Buscar</a>
                                 </nav>
                             </div>
                         </div>
@@ -187,7 +187,7 @@
                                             </div>
                                         
                                             <!-- Date Range Picker Example-->
-                                            <form id="formDatePicker" action="<?= base_url() ?>Buscar/view_files" method="POST">
+                                            <form id="formDatePicker" action="<?= base_url('index.php/Buscar/view_files') ?>" method="POST">
                                                 <div class="input-group input-group-joined" style="width: 16.5rem">
                                                     <span class="input-group-text"><i class="text-primary" data-feather="calendar"></i></span>
                                                     <input class="form-control ps-0 pointer" id="litepickerRangePlugin" name="date_range" placeholder="Selecciona el rango..." readonly />

@@ -108,7 +108,7 @@
                             </div>
                         </h6>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="<?= base_url('/Login/logout') ?>">
+                        <a class="dropdown-item" href="<?= base_url('index.php/Login/logout') ?>">
                             <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
                             Cerrar sesión
                         </a>
@@ -147,9 +147,9 @@
                             </a>
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
-                                    <a class="nav-link nav-link-icon" href="<?= base_url('/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
-                                    <a class="nav-link" href="<?= base_url('/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos') ?>"><i class="me-2" data-feather="file-plus"></i>Nuevas...</a>
+                                    <a class="nav-link nav-link-icon" href="<?= base_url('index.php/Carga_archivos/g_process') ?>"> <i class="me-2" data-feather="archive"></i>Procesos</a>
+                                    <a class="nav-link" href="<?= base_url('index.php/Buscar') ?>"><i class="me-2" data-feather="search"></i>Buscar</a>
                                 </nav>
                             </div>
                             
@@ -206,7 +206,7 @@
                                             <?php if ($contador): ?>
                                                 <?php if ($contador > 0){ ?>
                                                     <div class="tab-pane active my-4" id="buttonsDefaultHtml" role="tabpanel" aria-labelledby="buttonsDefaultHtmlTab">
-                                                        <a class="btn btn-outline-primary btn-lg me-2 my-1" href="<?= base_url("Carga_archivos/download?file_name=" . $zip) ?>" type="button" ><i class="me-2" data-feather="download"> </i> Descargar ZIP</a>
+                                                        <a class="btn btn-outline-primary btn-lg me-2 my-1" href="<?= base_url("index.php/Carga_archivos/download?file_name=" . $zip) ?>" type="button" ><i class="me-2" data-feather="download"> </i> Descargar ZIP</a>
                                                         <label for="formFile" class="form-label">El archivo está listo para su descarga.</label>
                                                     </div>
                                                 <?php } ?>
